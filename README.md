@@ -11,6 +11,8 @@ python 3.7.0
 opencv-python 3.4.2.16
 opencv-contrib-python 3.4.2.16
 numpy 1.15.2
+scipy 1.1.0
+sklearn 0.19.2
 ```
 
 # Reference

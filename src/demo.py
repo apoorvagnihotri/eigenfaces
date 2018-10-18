@@ -31,11 +31,9 @@ for subject in subjects:
 		X.append(temp)
 		y.append(subject)
 del temp
+X = np.array(X)
+y = np.array(y)
 print ('done')
-# img = np.array(X_train[0])
-# print (img)
-# print (img.dtype)
-# print (img.shape)
 
 
 # Split Train-Test
@@ -43,13 +41,24 @@ print ('done')
 X_train, X_test, y_train, y_test = train_test_split(
 								X, y, random_state=42)
 
+print(np.sort(np.unique(y_train))) # which classes present
 
 # Train the classfier
 ##########################################################
-e = src.EigenFaces(K)
+print('Taking K:', K)
+e = src.EigenFaces(K, debug=True)
 e.train(X_train, y_train)
 
-print(e.predict(X_train))
+predictions = e.predict(X_test, te=3000, tf=10000,\
+						nonface=-2, unknownface=-1)
+# print(predictions*(predictions != y_test))
+
+h,w = X_train[0].shape
+for i in range(10):
+	nonfaceimg = (np.random.rand(h,w))
+	print(e.predict([nonfaceimg], te=3000, tf=10000,\
+							nonface=-2, unknownface=-1))
+
 # print(type(data[1][1])) 
 # print(data[1][1].shape)
 

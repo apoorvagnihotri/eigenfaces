@@ -10,6 +10,7 @@ https://docs.opencv.org/2.4/modules/contrib/doc/facerec/facerec_tutorial.html#pr
 import numpy as np
 from numpy.linalg import norm 
 from scipy.linalg import eigh
+from sklearn.preprocessing import normalize
 import sys
 
 '''
@@ -19,8 +20,9 @@ params:
 	than no of test images
 '''
 class EigenFaces(object):
-	def __init__(self, K=10):
+	def __init__(self, K=10, debug=False):
 		self.K = K
+		self.debug=debug # for debugging purposes
 
 	'''
 	brief:
@@ -62,38 +64,31 @@ class EigenFaces(object):
 		vals = vals[:K]
 		vi = vi[:, :K]
 
-		# getting ui and corresp uvals
+		# getting ui(eigenfaces) and corresp uvals
 		uvals = vals
 		ui = np.matmul(A, vi)
-
-		assert (ui[:,0] == np.matmul(A,vi[:,0])).all(), 'not equal' #random check :P
-
 		del vals, vi
-		# print ('final eigs', ui)
-		# print ('final eigvals', uvals)
-		# normlize
-		for i in range(K):
-			ui[:,i] = ui[:,i] / norm(ui[:,i])
-		# print ('normalized eigs', ui)
-		# we got the top K ui eigenvectors.
+
+		# normalize
+		ui = normalize(ui, axis=0, norm='l2')
 
 		# will store weigth vectors as cols
-		Wei = np.zeros((K, M))
-		for i in range(M):
-			im = A[:, i]
-			for j in range(K):
-				Wei[j,i] = np.matmul(im.T, ui[:, j])
-		# print(Wei)
+		Wei = np.matmul(ui.T, A) # KxM Matrix
 
-		# using the weigths of only a 
-		# representative member of a class (can 
-		# also use avg of all members of a class, but 
-		# following this convention)
+		# finding avg weight vector for each class
+		categories = np.unique(Y_train) # categories -> [label1, label2, ..., labelk]
+		W = np.zeros((K, len(categories))) # W -> [W_vct_label1, W_vct_label2, ..., ]
+		for i in range(len(categories)):
+			category = categories[i]
+			truevals = (Y_train==category)
+			occurances = np.sum(truevals) # number of times
+			W[:,i] = np.sum(Wei * truevals, axis=1)/occurances
+
+		# saving into class variables
+		self.categories = categories
 		self.uvals = uvals
 		self.ui = ui
-		self.Wei = Wei
-		u, self.indices = np.unique(Y_train, return_index=True)
-		# print (self.indices)
+		self.W = W
 
 	'''
 	params:
@@ -108,59 +103,46 @@ class EigenFaces(object):
 		@param nonface
 		 index to return if non-face detected
 	'''
-	def predict(self, X, te=2, tf=100000, unknownface=-1, nonface=-2):
+	def predict(self, X, te, tf, unknownface=-1, nonface=-2):
+		categories = self.categories
 		K = self.K
-		Wei = self.Wei
+		W = self.W
 		ui = self.ui
 		y = []
 
 		for x in X:
-			# reshaping the image and finding offset
+			# finding offset w.r.t. meanface
 			h,w = x.shape
 			Nsq = h*w
-			xr = x.reshape((Nsq, 1))
-			offset = xr - self.avgImg.reshape((Nsq,1))
-			# print (xr, x, offset)
-			# sys.exit()
+			x = x.reshape((Nsq, 1))
+			offset = x - self.avgImg
 
-			# finding the weight vecotr of test img
-			weiVct = np.zeros((K, 1))
-			for j in range(K):
-				weiVct[j,0] = np.matmul(offset.T, ui[:, j])
-			# print (weiVct)
+			# finding the weight vector of test img
+			weiVct = np.matmul(ui.T, offset)
+			assert weiVct.shape[0]==K and weiVct.shape[1]==1, \
+						'Weight for test images is bad shape'
 
 			# comparing with other class representatives
-			dist_bw_faces = -1
-			indx = -1
-			for i in self.indices:
-				df = norm(Wei[:, i] - weiVct)
-				if (dist_bw_faces == -1):
-					dist_bw_faces = df
-				else:
-					if (dist_bw_faces != min(dist_bw_faces, df)):
-						dist_bw_faces = df
-						indx = i
+			temp = norm((W - weiVct), axis=0) # euclidian norms
+			matched_category = categories[np.argmin(temp)] # closest match
+			min_dist_bw_faces = np.min(temp)
 
-			# print('indx',indx, '\n wiegths:', Wei, '\nweight', weiVct)
-			# sys.exit()
+			# calculating the distance from facespce
+			recon = np.matmul(ui, weiVct)
+			min_dist_bw_faceSpace = np.min(norm(x - recon, axis=0))
 
-			recon = np.zeros((Nsq, 1))
-			for i in range(K):
-				recon += weiVct[i,0]*ui[:,i].reshape((Nsq, 1))
-			# print (recon)
-
-			dist_bw_faceSpace = norm(recon)
-
-			if dist_bw_faceSpace <= tf and dist_bw_faces <= te:
-				y.append(indx)
-			elif dist_bw_faceSpace <= tf and dist_bw_faces > te:
-				print(dist_bw_faces)
+			if min_dist_bw_faceSpace <= tf and min_dist_bw_faces <= te:
+				y.append(matched_category)
+			elif min_dist_bw_faceSpace <= tf and min_dist_bw_faces > te:
 				y.append(unknownface)
-			else: # dist_bw_faceSpace > tf
-				print(dist_bw_faceSpace)
+				if self.debug:
+					print('dist_bw_faces', min_dist_bw_faces)
+			else: # min_dist_bw_faceSpace > tf
 				y.append(nonface)
+				if self.debug:
+					print('dist_bw_faceSpace', min_dist_bw_faceSpace)
 
-		return y
+		return np.array(y)
 
 # find the nearest neigbour of the with the given weights
 # test img provided
