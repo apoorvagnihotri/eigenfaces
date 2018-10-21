@@ -3,6 +3,7 @@ import cv2 as cv
 import sys
 import src
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
 
 
 # Variables
@@ -105,7 +106,6 @@ print('Accuracy_nonFaces:', np.sum(predictions_nonFaces
 
 # Showing the top 'oz' eigenfaces
 for ox in range(oz):
-	cv.imshow('eigenface', (255*e.ui[:,ox].reshape(h,w)).astype(np.uint8))
-	cv.waitKey(0)
-	cv.destroyAllWindows()
+  plt.imshow(e.ui[:,ox].reshape(h,w), cmap='gray')
+  plt.show()
 sys.exit()

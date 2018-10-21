@@ -20,6 +20,39 @@ sklearn 0.19.2
 ```
 ---
 
+# Idea
+This paper tries to use the idea of Principal Component Analysis to reduce the number of dimensions of the image and hopefully only measure those "Features" that vary to give different identities to people faces.
+
+---
+
+# Methodology
+Training
+* Suppose we have $$M$$ images that are of the dimensions $$N\times N$$. We first convert all the images into vectors of dimention $$N^2\times1$$. Each of these vectors is denoted by $$\Gamma_i$$
+* We next find the 'mean-face', i.e. the mean of all the $$M$$ vectors as $$\Psi$$. 
+$$\Psi = \Sigma \Gamma_i$$
+* We find the offsets of the images from the mean face by substracting every image as,
+ $$\phi_i = \Gamma_i - \Psi$$
+* We next want to find the eigenvectors $$u_i$$ of the Covariance matrix $$AA^T$$, where, $$A = [\phi_1 \phi_2 \cdots \phi_M]$$
+* Since $$AA^T$$ is of the dimention $$N^2 \times 1$$ we don't want to spend so much compute power to find out $$N^2$$ eigenvectors. We work around this by finding the eigenvectors $$v_i$$ of $$A^TA$$.
+* After we get all $$M$$ of the $$v_i$$, we drop the all but the top $$K$$ (according to thier eigenvalues) of them (PCA at work).
+* We convert these $$v_i$$ to $$u_i$$ using the equation,
+$$u_i = Av_i$$
+* We now normalize the $$u_i$$ we got and then these $$u_i$$ are exactly the 'eigenfaces' that the paper talks about.
+* Next we find the weight vector $$\in \mathbb{R}^{K\times 1}$$ by the following equation,
+$$\bold{w}^j = [u_1 u_2 \cdots u_K]^T\times \phi_j$$
+* We store the resulting weight vectors $$\bold{w}$$ for each of the training images.
+
+Testing
+* During testing we find the $$\bold{w}^{testing}$$ of the testing image and try to minimize the $$L_2$$ from all the $$\bold{w}$$ of the training images. The $$\bold{w}$$ that is closest to $$\bold{w}^{testing}$$ set the label of the testing image, i.e. the label that the argmin $$\bold{w}$$ belonged to, is predicted the label of the testing image.
+* There may be cases that we have an unknown face, in this case we set a threshold $$t_\in$$. The value of the minimum $$L_2$$ norm we got from subtracting $$\bold{w}$$ and $$\bold{w}^{testing}$$ should be less than this, else the testing image is considered to correspond to an unknownface, whose $$\bold{w}$$ we don't have.
+* Other case is when we provide a non face image to the classifier, in this case we try to reconstruct the testing image $$\phi^{testing}$$ from $$\bold{w}^{testing}$$ by the following equation
+$$\hat{\phi^{testing}} = [u_1 u_2 \cdots u_K]\times \bold{w}^{testing}$$
+* We want this reconstructed image to be withing $$t_f$$, threshold from the originial image $$\phi^{testing}$$, i.e. 
+$$L_2(\hat{\phi^{testing}} - \phi^{testing}) < t_f$$
+To be considered a face image, else a non face image.
+
+---
+
 # Testing
 * We tested the class that we implemented by only letting the algorithm learn 38 subject images in the dataset above. We then tested the algorithm on a collection of all the 40 subjects in the dataset. 
 * We set the values of the threshold by looking at the sample values we were getting of the L2 norms of the different differences in weights.
@@ -44,9 +77,9 @@ unknownface = -1 # label to denote an unknownface
 nonface = -2 # label to denote an nonface
 ```
 Top 3 eigenfaces:
-![Eigenface1](https://i.imgur.com/TPYWxTG.png)
-![Eigenface2](https://i.imgur.com/Pn2zx7Y.png)
-![Eigenface3](https://i.imgur.com/HKc7X7a.png)
+![Eigenface1](https://i.imgur.com/EN9xJYs.png)
+![Eigenface2](https://i.imgur.com/abJWIje.png)
+![Eigenface3](https://i.imgur.com/qTA84WX.png)
 
 ---
 
@@ -62,5 +95,7 @@ Top 3 eigenfaces:
   "Parameterisation of a stochastic model for human face identification"
   2nd IEEE Workshop on Applications of Computer Vision
   December 1994, Sarasota (Florida).
+* http://www.vision.jhu.edu/teaching/vision08/Handouts/case_study_pca1.pdf
+* http://www.face-rec.org/algorithms/pca/jcn.pdf
 
 ---

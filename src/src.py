@@ -142,6 +142,3 @@ class EigenFaces(object):
 				print('dist_bw_faceSpace', min_dist_bw_faceSpace)
 
 		return np.array(y)
-
-# find the nearest neigbour of the with the given weights
-# test img provided
