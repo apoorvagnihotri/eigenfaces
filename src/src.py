@@ -135,12 +135,11 @@ class EigenFaces(object):
 				y.append(matched_category)
 			elif min_dist_bw_faceSpace <= tf and min_dist_bw_faces > te:
 				y.append(unknownface)
-				if self.debug:
-					print('dist_bw_faces', min_dist_bw_faces)
 			else: # min_dist_bw_faceSpace > tf
 				y.append(nonface)
-				if self.debug:
-					print('dist_bw_faceSpace', min_dist_bw_faceSpace)
+			if self.debug:
+				print('dist_bw_faces', min_dist_bw_faces)
+				print('dist_bw_faceSpace', min_dist_bw_faceSpace)
 
 		return np.array(y)
 
