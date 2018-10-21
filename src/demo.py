@@ -14,8 +14,8 @@ subject_images = range(1,11)
 M = len(subject_images) * len(subjects) # total no of images
 K = 30 # dimension of face_space
 b = 2 # number of classes to keep unseen
-te = 2000 # Threshold for the L2 distance for training weight vectors
-tf = 15000 # Threshold for the L2 distance from the face space
+te = 2100 # Threshold for the L2 distance for training weight vectors
+tf = 13000 # Threshold for the L2 distance from the face space
 unknownface = -1 # label to denote an unknownface
 nonface = -2 # label to denote an nonface
 
@@ -86,18 +86,14 @@ print('Accuracy_unknownFaces:', np.sum(predictions_unknownFaces
 
 # Testing non faces
 ##########################################################
-
-
-# print(predictions == y_test)
-# print(predictions*(predictions != y_test))
-
-# h,w = X_train[0].shape
-# for i in range(10):
-#   nonfaceimg = (np.random.rand(h,w))
-#   print(e.predict([nonfaceimg], te=3000, tf=10000,\
-#                         nonface=-2, unknownface=-1))
-
-# # print(type(data[1][1])) 
-# print(data[1][1].shape)
-
+h,w = X_train[0].shape
+nonfaces=[]
+for i in range(10):
+  temp = (np.random.rand(h,w))*255
+  nonfaces.append(temp)
+nonfaces = np.array(nonfaces)
+predictions_nonFaces = e.predict(nonfaces, te=te, tf=tf, nonface=nonface,
+                                 unknownface=unknownface)
+print('Accuracy_unknownFaces:', np.sum(predictions_nonFaces
+	  == nonface) / len(predictions_nonFaces))
 sys.exit()
