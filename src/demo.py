@@ -12,12 +12,15 @@ result_dir = '../result/'
 subjects = range(1, 41)
 subject_images = range(1,11)
 M = len(subject_images) * len(subjects) # total no of images
+
+# Hyperparameters
 K = 30 # dimension of face_space
 b = 2 # number of classes to keep unseen
 te = 2100 # Threshold for the L2 distance for training weight vectors
 tf = 13000 # Threshold for the L2 distance from the face space
 unknownface = -1 # label to denote an unknownface
 nonface = -2 # label to denote an nonface
+oz = 3 # top 'oz' eigenfaces to show
 
 # Reading data
 ##########################################################
@@ -47,7 +50,6 @@ X_knownFaces = X[:(b_)]
 y_knownFaces = y[:(b_)]
 X_unknownFaces = X[(b_):]
 y_unknownFaces = y[(b_):]
-# print (len(y_knownFaces), len(X_unknownFaces))
 
 
 # Split Train-Test
@@ -59,8 +61,11 @@ X_train, X_test, y_train, y_test = train_test_split(X_knownFaces,
 
 # Train the classfier
 ##########################################################
+print('Training on M:', len(X_train))
 print('Taking K:', K)
-e = src.EigenFaces(K, debug=True)
+print('Taking te:', te)
+print('Taking tf:', tf)
+e = src.EigenFaces(K, debug=False)
 e.train(X_train, y_train)
 
 
@@ -70,7 +75,7 @@ e.train(X_train, y_train)
 predictions_knownFaces = e.predict(X_test, te=te, tf=tf,
                                    nonface=nonface,
                                    unknownface=unknownface)
-print(predictions_knownFaces*(predictions_knownFaces != y_test))
+# print(predictions_knownFaces*(predictions_knownFaces != y_test))
 print('Accuracy_knownFaces:', np.sum(predictions_knownFaces
 	  == y_test) / len(predictions_knownFaces))
 
@@ -80,7 +85,7 @@ print('Accuracy_knownFaces:', np.sum(predictions_knownFaces
 predictions_unknownFaces = e.predict(X_unknownFaces, te=te, tf=tf,
                                      nonface=nonface,
                                      unknownface=unknownface)
-print(predictions_unknownFaces*(predictions_unknownFaces != y_unknownFaces))
+# print(predictions_unknownFaces*(predictions_unknownFaces != y_unknownFaces))
 print('Accuracy_unknownFaces:', np.sum(predictions_unknownFaces
 	  == unknownface) / len(predictions_unknownFaces))
 
@@ -94,6 +99,13 @@ for i in range(10):
 nonfaces = np.array(nonfaces)
 predictions_nonFaces = e.predict(nonfaces, te=te, tf=tf, nonface=nonface,
                                  unknownface=unknownface)
-print('Accuracy_unknownFaces:', np.sum(predictions_nonFaces
+print('Accuracy_nonFaces:', np.sum(predictions_nonFaces
 	  == nonface) / len(predictions_nonFaces))
+
+
+# Showing the top 'oz' eigenfaces
+for ox in range(oz):
+	cv.imshow('eigenface', (255*e.ui[:,ox].reshape(h,w)).astype(np.uint8))
+	cv.waitKey(0)
+	cv.destroyAllWindows()
 sys.exit()
