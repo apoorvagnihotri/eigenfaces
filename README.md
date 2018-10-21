@@ -15,6 +15,28 @@ scipy 1.1.0
 sklearn 0.19.2
 ```
 
+# Results
+We used the ATnT face data set to train our algorithm and then we tested the implementation using some known faces, some unknown faces and some non faces, in each of the case we recived accuracies of ` ` ` ` ` `. The hyperparameters that we worked with were as below. One can change the hyperparameter in the start of demo.py to get different results.
+
+We print the accuracies to the console and the main class that has been implemented resides in `src.py`. Have a look at that file to know the implementation details.
+
+Hyperparameters used:
+```python
+K = 30 # dimension of face_space
+b = 2 # number of classes to keep unseen
+te = 3500 # Threshold for the L2 distance for training weight vectors
+tf = 15000 # Threshold for the L2 distance from the face space
+unknownface = -1 # label to denote an unknownface
+nonface = -2 # label to denote an nonface
+```
+
+
+
+
+
+
+
+
 # Reference
 *  F. Samaria and A. Harter 
   "Parameterisation of a stochastic model for human face identification"
