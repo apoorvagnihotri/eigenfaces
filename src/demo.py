@@ -12,8 +12,12 @@ result_dir = '../result/'
 subjects = range(1, 41)
 subject_images = range(1,11)
 M = len(subject_images) * len(subjects) # total no of images
-K = int(M / 3) # dimention of face_space
-
+K = 30 # dimension of face_space
+b = 2 # number of classes to keep unseen
+te = 2000 # Threshold for the L2 distance for training weight vectors
+tf = 15000 # Threshold for the L2 distance from the face space
+unknownface = -1 # label to denote an unknownface
+nonface = -2 # label to denote an nonface
 
 # Reading data
 ##########################################################
@@ -23,25 +27,35 @@ print("Reading data")
 X = []
 y = []
 for subject in subjects:
-	for subject_image in subject_images:
-		i_path = path +'s'+ str(subject) + \
-				'/' + str(subject_image) + '.pgm'
-		temp = cv.imread(i_path)
-		temp = cv.cvtColor(temp, cv.COLOR_BGR2GRAY) # B&W
-		X.append(temp)
-		y.append(subject)
+    for subject_image in subject_images:
+        i_path = path +'s'+ str(subject) + \
+                 '/' + str(subject_image) + '.pgm'
+        temp = cv.imread(i_path)
+        temp = cv.cvtColor(temp, cv.COLOR_BGR2GRAY) # B&W
+        X.append(temp)
+        y.append(subject)
 del temp
 X = np.array(X)
 y = np.array(y)
 print ('done')
 
 
+# Keeping 'b' number of classes unseen by the algo.
+##########################################################
+b_ = M - b*len(subject_images)
+X_knownFaces = X[:(b_)]
+y_knownFaces = y[:(b_)]
+X_unknownFaces = X[(b_):]
+y_unknownFaces = y[(b_):]
+# print (len(y_knownFaces), len(X_unknownFaces))
+
+
 # Split Train-Test
 ##########################################################
-X_train, X_test, y_train, y_test = train_test_split(
-								X, y, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X_knownFaces,
+	                                                y_knownFaces, 
+	                                                random_state=42)
 
-print(np.sort(np.unique(y_train))) # which classes present
 
 # Train the classfier
 ##########################################################
@@ -49,38 +63,41 @@ print('Taking K:', K)
 e = src.EigenFaces(K, debug=True)
 e.train(X_train, y_train)
 
-predictions = e.predict(X_test, te=3000, tf=10000,\
-						nonface=-2, unknownface=-1)
+
+## TESTING
+# Testing known faces
+##########################################################
+predictions_knownFaces = e.predict(X_test, te=te, tf=tf,
+                                   nonface=nonface,
+                                   unknownface=unknownface)
+print(predictions_knownFaces*(predictions_knownFaces != y_test))
+print('Accuracy_knownFaces:', np.sum(predictions_knownFaces
+	  == y_test) / len(predictions_knownFaces))
+
+
+# Testing unknown faces
+##########################################################
+predictions_unknownFaces = e.predict(X_unknownFaces, te=te, tf=tf,
+                                     nonface=nonface,
+                                     unknownface=unknownface)
+print(predictions_unknownFaces*(predictions_unknownFaces != y_unknownFaces))
+print('Accuracy_unknownFaces:', np.sum(predictions_unknownFaces
+	  == unknownface) / len(predictions_unknownFaces))
+
+# Testing non faces
+##########################################################
+
+
+# print(predictions == y_test)
 # print(predictions*(predictions != y_test))
 
-h,w = X_train[0].shape
-for i in range(10):
-	nonfaceimg = (np.random.rand(h,w))
-	print(e.predict([nonfaceimg], te=3000, tf=10000,\
-							nonface=-2, unknownface=-1))
+# h,w = X_train[0].shape
+# for i in range(10):
+#   nonfaceimg = (np.random.rand(h,w))
+#   print(e.predict([nonfaceimg], te=3000, tf=10000,\
+#                         nonface=-2, unknownface=-1))
 
-# print(type(data[1][1])) 
+# # print(type(data[1][1])) 
 # print(data[1][1].shape)
 
 sys.exit()
-
-# e = src.EigenFaces(2)
-
-# i1 = [[[1, 1, 1], [2, 2, 2], [4, 4, 4]],
-# 	[[23, 23, 23],[23, 23, 23],[53, 53, 53]],
-# 	[[23, 23, 23],[2, 2, 2],[1, 1, 1]]]
-
-# i2 = [[[222, 222, 222], [0, 0, 0], [4, 4, 4]],
-# 	[[33, 33, 33],[24, 24, 24],[3, 3, 3]],
-# 	[[2, 2, 2],[9, 9, 9],[0, 0, 0]]]
-
-# i3 = [[[2, 2, 2], [0, 0, 0], [4, 4, 4]],
-# 	[[3, 3, 3],[4, 4, 4],[3, 3, 3]],
-# 	[[2, 2, 2],[9, 9, 9],[10, 10, 10]]]
-
-# i1 = np.array(i1)
-# i2 = np.array(i2)
-# i3 = np.array(i3)
-
-# e.train(np.array([i1, i2, i3]), np.array([1, 1, 3]))
-# e.predict(i3+1, 33, 12)
